@@ -1,0 +1,33 @@
+// Windows resources: application icon and version information.
+// WHISPER_VTT_VERSION* come from project(VERSION ...) in CMakeLists.txt.
+
+#include <windows.h>
+
+IDI_ICON1 ICON "app.ico"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION    WHISPER_VTT_VERSION_MAJOR,WHISPER_VTT_VERSION_MINOR,WHISPER_VTT_VERSION_PATCH,0
+PRODUCTVERSION WHISPER_VTT_VERSION_MAJOR,WHISPER_VTT_VERSION_MINOR,WHISPER_VTT_VERSION_PATCH,0
+FILEFLAGSMASK  VS_FFI_FILEFLAGSMASK
+FILEFLAGS      0x0L
+FILEOS         VOS_NT_WINDOWS32
+FILETYPE       VFT_APP
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "FileDescription",  "Whisper Voice-to-Text"
+            VALUE "FileVersion",      WHISPER_VTT_VERSION
+            VALUE "InternalName",     "WhisperVTT"
+            VALUE "OriginalFilename", "WhisperVTT.exe"
+            VALUE "ProductName",      "WhisperVTT"
+            VALUE "ProductVersion",   WHISPER_VTT_VERSION
+            VALUE "LegalCopyright",   "MIT License"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

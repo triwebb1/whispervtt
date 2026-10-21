@@ -1,0 +1,9 @@
+* text=auto eol=lf
+
+*.bat eol=crlf
+*.rc  eol=crlf
+resources/models-README.txt eol=crlf
+
+*.bin binary
+*.ico binary
+*.png binary

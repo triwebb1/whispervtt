@@ -1,0 +1,122 @@
+name: CI
+
+# Every push and pull request is built and tested.  When that passes:
+#   - a push to main refreshes the rolling "continuous" prerelease, and
+#   - a version tag (v1.2.3) publishes that release,
+# both with the freshly built installer and portable zip attached.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VULKAN_VERSION: 1.4.363.0
+
+jobs:
+  build:
+    name: Build & test (Windows)
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install Ninja and Inno Setup
+        run: |
+          pip install ninja
+          choco install innosetup --yes --no-progress
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.2'
+          arch: win64_msvc2022_64
+          cache: true
+
+      - name: Install the Vulkan SDK
+        run: |
+          $sdk = "C:\VulkanSDK\$env:VULKAN_VERSION"
+          $exe = "$env:RUNNER_TEMP\vulkansdk.exe"
+          curl.exe -sSfL -o $exe "https://sdk.lunarg.com/sdk/download/$env:VULKAN_VERSION/windows/vulkansdk-windows-X64-$env:VULKAN_VERSION.exe"
+          $sig = Get-AuthenticodeSignature $exe
+          if ($sig.Status -ne 'Valid' -or $sig.SignerCertificate.Subject -notmatch 'LunarG') {
+            throw "Vulkan SDK installer signature check failed: $($sig.Status)"
+          }
+          Start-Process $exe -Wait -ArgumentList '--root', $sdk, '--accept-licenses', '--default-answer', '--confirm-command', 'install'
+          "VULKAN_SDK=$sdk" >> $env:GITHUB_ENV
+          "$sdk\Bin" >> $env:GITHUB_PATH
+
+      - name: Configure
+        run: cmake --preset release
+
+      - name: Build
+        run: cmake --build --preset release
+
+      - name: Test
+        run: ctest --preset release
+
+      - name: Verify the build has no networking code
+        run: |
+          cmake --install build/release
+          ./tools/verify-offline.ps1 build/release/install
+
+      - name: Package
+        run: |
+          cmake --build --preset release --target package
+          cmake --build --preset release --target installer
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: |
+            build/release/WhisperVTT-*-portable.zip
+            build/release/WhisperVTT-*-setup.exe
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages
+
+      - name: Refresh the continuous build
+        if: github.ref == 'refs/heads/main'
+        run: |
+          gh release delete continuous --yes --cleanup-tag || true
+          gh release create continuous WhisperVTT-*-setup.exe WhisperVTT-*-portable.zip \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Continuous build" \
+            --notes "Latest build of \`main\` that passed CI (${GITHUB_SHA::7}). For a stable version, use the newest numbered release."
+
+      - name: Publish the tagged release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          setup="WhisperVTT-$version-setup.exe"
+          zip="WhisperVTT-$version-win64-portable.zip"
+          test -f "$setup" || { echo "::error::Tag $GITHUB_REF_NAME does not match project(VERSION) in CMakeLists.txt"; exit 1; }
+          gh release create "$GITHUB_REF_NAME" "$setup" "$zip" --title "WhisperVTT $GITHUB_REF_NAME" --generate-notes

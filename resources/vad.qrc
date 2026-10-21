@@ -1,0 +1,9 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <!-- Silero VAD v6.2.0 (MIT), ggml format, from
+         huggingface.co/ggml-org/whisper-vad — trims non-speech before
+         transcription. -->
+    <qresource prefix="/vad">
+        <file>ggml-silero-v6.2.0.bin</file>
+    </qresource>
+</RCC>

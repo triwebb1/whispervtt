@@ -1,0 +1,40 @@
+# ── Build output ────────────────────────────────────────────────────
+# All presets build into build/<preset>/; whisper.cpp is fetched into
+# build/<preset>/_deps/ at configure time.
+/build*/
+/out/
+/dist/
+/_deps/
+
+# ── Local dependencies and tooling ──────────────────────────────────
+# Qt, the Vulkan SDK and Visual Studio normally live outside the repo.
+# These cover copies placed inside it (e.g. `aqt install-qt ... -O .`).
+/Qt/
+/VulkanSDK/
+/[0-9].[0-9]*.[0-9]*/
+/.venv/
+/venv/
+/.ccache/
+/vcpkg_installed/
+
+# Machine-specific settings (e.g. a local Qt path)
+CMakeUserPresets.json
+
+# ── Binaries ────────────────────────────────────────────────────────
+# Whisper models are downloaded by the user; the embedded VAD model is
+# the only .bin tracked.
+*.bin
+!/resources/ggml-silero-v6.2.0.bin
+*.dll
+*.exe
+*.lib
+*.obj
+*.pdb
+*.zip
+
+# ── Editors and logs ────────────────────────────────────────────────
+/.vs/
+/.vscode/
+/.idea/
+compile_commands.json
+*.log
