@@ -5,17 +5,11 @@ project(WhisperVTT VERSION 1.0.0
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
 
 # ── Options ──────────────────────────────────────────────────────────
 option(WHISPER_VTT_VULKAN      "GPU acceleration via Vulkan (any vendor)"       ON)
 option(WHISPER_VTT_DEBUG       "Write a debug log to %TEMP%/whisper_vtt_debug.log" OFF)
 option(WHISPER_VTT_BUILD_TESTS "Build the unit tests"                           ON)
-
-# ── Qt 6 ─────────────────────────────────────────────────────────────
-find_package(Qt6 6.7 REQUIRED COMPONENTS Widgets)
-qt_standard_project_setup()
 
 # The exe, whisper/ggml DLLs and ggml's backends share one folder, so a
 # build runs in place and ggml finds its backends next to the exe.
@@ -43,6 +37,12 @@ set(GGML_CPU_ALL_VARIANTS  ON  CACHE BOOL "" FORCE)
 set(GGML_NATIVE            OFF CACHE BOOL "" FORCE)
 set(GGML_VULKAN ${WHISPER_VTT_VULKAN} CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(whisper)
+
+# ── Qt 6 ─────────────────────────────────────────────────────────────
+# After whisper.cpp, so automoc applies only to our own targets.
+find_package(Qt6 6.7 REQUIRED COMPONENTS Widgets)
+qt_standard_project_setup()
+set(CMAKE_AUTORCC ON)
 
 # ── Core library: platform-independent, unit-tested logic ────────────
 add_library(whispervtt_core STATIC
